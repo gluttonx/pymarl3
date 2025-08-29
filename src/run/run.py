@@ -22,6 +22,9 @@ def run(_run, _config, _log):
     _config = args_sanity_check(_config, _log)
 
     args = SN(**_config)
+    # 兼容未定义 td_lambda 的算法（如 IPPO）
+    if not hasattr(args, "td_lambda"):
+        args.td_lambda = 0.0
 
     th.set_num_threads(args.thread_num)
     # th.set_num_interop_threads(8)
@@ -254,14 +257,26 @@ def run_sequential(args, logger):
 
     logger.console_logger.info("Beginning training for {} timesteps".format(args.t_max))
 
+    # def _debug_batch_devices(tag, batch, t=0):
+    #     print(f"[DEVDBG] {tag} EpisodeBatch.device={batch.device} args.device={args.device}")
+    #     # 过一遍关键 transition_data
+    #     for k in ["obs", "state", "actions", "avail_actions", "reward", "terminated", "filled", "actions_onehot", "probs"]:
+    #         if k in batch.data.transition_data:
+    #             x = batch.data.transition_data[k]
+    #             try:
+    #                 sub = x[:, t] if x.dim() >= 2 else x
+    #             except Exception:
+    #                 sub = x
+    #             print(f"[DEVDBG]   trans[{k}] device={x.device} shape={tuple(x.shape)} sample_t_device={getattr(sub,'device','NA')}")
+    #     # 过一遍 episode_data
+    #     for k, v in batch.data.episode_data.items():
+    #         print(f"[DEVDBG]   ep[{k}] device={v.device} shape={tuple(v.shape)}")
+
     while runner.t_env <= args.t_max:
-        # Run for a whole episode at a time
         with th.no_grad():
-            # t_start = time.time()
             episode_batch = runner.run(test_mode=False)
-            if episode_batch.batch_size > 0:  # After clearing the batch data, the batch may be empty.
+            if episode_batch.batch_size > 0:
                 buffer.insert_episode_batch(episode_batch)
-            # print("Sample new batch cost {} seconds.".format(time.time() - t_start))
             episode += args.batch_size_run
 
         if buffer.can_sample(args.batch_size):
@@ -269,13 +284,20 @@ def run_sequential(args, logger):
                 continue
 
             episode_sample = buffer.sample(args.batch_size)
-
-            # Truncate batch to only filled timesteps
             max_ep_t = episode_sample.max_t_filled()
             episode_sample = episode_sample[:, :max_ep_t]
 
-            if episode_sample.device != args.device:
-                episode_sample.to(args.device)
+            # # 搬运前打印
+            # _debug_batch_devices("before_move", episode_sample, t=0)
+
+            # if episode_sample.device != args.device:
+            #     episode_sample.to(args.device)
+
+            # # 搬运后打印
+            # _debug_batch_devices("after_move", episode_sample, t=0)
+
+            # if episode_sample.device != args.device:
+            #     print(f"[DEVDBG][WARN] episode_sample.device still {episode_sample.device} != {args.device}")
 
             learner.train(episode_sample, runner.t_env, episode)
             del episode_sample

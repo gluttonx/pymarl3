@@ -31,21 +31,29 @@ class HPNMAC(BasicMAC):
         bs = batch.batch_size
         obs_component_dim, _ = self._get_obs_component_dim()
         raw_obs_t = batch["obs"][:, t]  # [batch, agent_num, obs_dim]
+
+        # if t == 0:
+        #     print(f"[DEVDBG] HPNMAC._build_inputs t={t} raw_obs_t.device={raw_obs_t.device} batch_device={batch.device}")
+
         move_feats_t, enemy_feats_t, ally_feats_t, own_feats_t = th.split(raw_obs_t, obs_component_dim, dim=-1)
-        enemy_feats_t = enemy_feats_t.reshape(bs * self.n_agents * self.n_enemies,
-                                              -1)  # [bs * n_agents * n_enemies, fea_dim]
-        ally_feats_t = ally_feats_t.reshape(bs * self.n_agents * self.n_allies,
-                                            -1)  # [bs * n_agents * n_allies, a_fea_dim]
-        # merge move features and own features to simplify computation.
-        context_feats = [move_feats_t, own_feats_t]  # [batch, agent_num, own_dim]
-        own_context = th.cat(context_feats, dim=2).reshape(bs * self.n_agents, -1)  # [bs * n_agents, own_dim]
+        enemy_feats_t = enemy_feats_t.reshape(bs * self.n_agents * self.n_enemies, -1)
+        ally_feats_t = ally_feats_t.reshape(bs * self.n_agents * self.n_allies, -1)
+        context_feats = [move_feats_t, own_feats_t]
+
+        # if t == 0:
+        #     print(f"[DEVDBG] HPNMAC._build_inputs own_feats_t.device={own_feats_t.device} move_feats_t.device={move_feats_t.device}")
+
+        own_context = th.cat(context_feats, dim=2).reshape(bs * self.n_agents, -1)
+
+        # if t == 0:
+        #     print(f"[DEVDBG] HPNMAC._build_inputs own_context.device={own_context.device}")
 
         embedding_indices = []
         if self.args.obs_agent_id:
-            # agent-id indices, [bs, n_agents]
             embedding_indices.append(th.arange(self.n_agents, device=batch.device).unsqueeze(0).expand(bs, -1))
+            # if t == 0:
+            #     print(f"[DEVDBG] HPNMAC._build_inputs agent_id_idx.device={embedding_indices[-1].device}")
         if self.args.obs_last_action:
-            # action-id indices, [bs, n_agents]
             if t == 0:
                 embedding_indices.append(None)
             else:

@@ -1,0 +1,49 @@
+# --- CENTRALV specific parameters ---
+# Independent PPO with value norm, layer_norm, orthogonal, value clip
+# but, without death agent mask, data chunk
+
+action_selector: "multinomial"
+epsilon_start: .0
+epsilon_finish: .0
+epsilon_anneal_time: 100000
+mask_before_softmax: True
+
+runner: "parallel"
+
+buffer_size: 64
+batch_size_run: 8
+batch_size: 64
+accumulated_episodes: 8
+
+mac: "hpn_mac"
+#agent: 'n_rnn'
+agent: "hpns_rnn"
+
+hpn_hyper_dim: 64
+hpn_hyper_activation: 'relu'
+
+hpn_head_num: 1 # 2 for 3s_vs_5z and 6h_vs_8z
+hypernet_embed: 64
+t_max: 10050000
+
+obs_agent_id: True
+
+lr: 0.0005
+critic_coef: 0.5
+entropy: 0.01
+gae_lambda: 0.95
+mini_epochs: 8
+eps_clip: 0.2
+save_probs: True
+
+agent_output_type: "pi_logits"
+learner: "ppo_learner"
+
+use_layer_norm: True
+use_orthogonal: True
+gain: 0.01
+use_value_norm: True
+use_hpn_critic: True
+critic_hidden_dim: 128
+
+name: "ippo_env=8_adam_gae"

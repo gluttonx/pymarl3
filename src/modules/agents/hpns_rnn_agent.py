@@ -157,6 +157,9 @@ class HPNS_RNNAgent(nn.Module):
         bs, own_feats_t, enemy_feats_t, ally_feats_t, embedding_indices = inputs
 
         # (1) 自身特征嵌入
+        # # 假设这里已得到 own_feats_t
+        # if isinstance(own_feats_t, th.Tensor):
+        #     print(f"[DEVDBG] hpns_rnn_agent.forward own_feats_t.device={own_feats_t.device} fc1_own.weight.device={self.fc1_own.weight.device}")
         embedding_own = self.fc1_own(own_feats_t)  # [bs * n_agents, rnn_hidden_dim]，线性变换自身特征
 
         # (2) ID 嵌入

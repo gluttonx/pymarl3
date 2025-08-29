@@ -10,6 +10,8 @@ from sacred.observers import FileStorageObserver
 from sacred.utils import apply_backspaces_and_linefeeds
 import sys
 import torch as th
+th.backends.cudnn.benchmark = True  # 优化 CUDA 内核选择
+th.backends.cudnn.enabled = True
 from utils.logging import get_logger
 import yaml
 
@@ -63,7 +65,7 @@ def _get_config(params, arg_name, subfolder):
 
 def recursive_dict_update(d, u):
     for k, v in u.items():
-        if isinstance(v, collections.Mapping):
+        if isinstance(v, collections.abc.Mapping):
             d[k] = recursive_dict_update(d.get(k, {}), v)
         else:
             d[k] = v
