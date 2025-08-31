@@ -22,9 +22,6 @@ def run(_run, _config, _log):
     _config = args_sanity_check(_config, _log)
 
     args = SN(**_config)
-    # 兼容未定义 td_lambda 的算法（如 IPPO）
-    if not hasattr(args, "td_lambda"):
-        args.td_lambda = 0.0
 
     th.set_num_threads(args.thread_num)
     # th.set_num_interop_threads(8)
@@ -40,89 +37,97 @@ def run(_run, _config, _log):
                                        width=1)
     _log.info("\n\n" + experiment_params + "\n")
 
+    # # configure tensorboard logger
+    # unique_token = "{}__{}".format(args.name, datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
+    # args.unique_token = unique_token
+
+    # testing_algorithms = ["vdn", "qmix", "hpn_vdn", "hpn_qmix",
+    #                       "deepset_vdn", "deepset_qmix", "deepset_hyper_vdn", "deepset_hyper_qmix",
+    #                       "updet_vdn", "updet_qmix", "vdn_DA", "qmix_DA",
+    #                       "gnn_vdn", "gnn_qmix", "qplex", "hpn_qplex", "asn"
+    #                       ]
+    # env_name = args.env
+    # logdir = env_name
+    # if env_name in ["sc2", "sc2_v2", ]:
+    #     logdir = os.path.join("{}_{}-obs_aid={}-obs_act={}".format(
+    #         logdir,
+    #         args.env_args["map_name"],
+    #         int(args.obs_agent_id),
+    #         int(args.obs_last_action),
+    #     ))
+    #     if env_name == "sc2_v2":
+    #         logdir = logdir + "-conic_fov={}".format(
+    #             "1-change_fov_by_move={}".format(
+    #                 int(args.env_args["change_fov_with_move"])) if args.env_args["conic_fov"] else "0"
+    #         )
+    # logdir = os.path.join(logdir,
+    #                       "algo={}-agent={}".format(args.name, args.agent),
+    #                       "env_n={}".format(
+    #                           args.batch_size_run,
+    #                       ))
+    # if args.name in testing_algorithms:
+    #     if args.name in ["vdn_DA", "qmix_DA", ]:
+    #         logdir = os.path.join(logdir,
+    #                               "{}-data_augment={}".format(
+    #                                   args.mixer, args.augment_times
+    #                               ))
+    #     elif args.name in ["gnn_vdn", "gnn_qmix"]:
+    #         logdir = os.path.join(logdir,
+    #                               "{}-layer_num={}".format(
+    #                                   args.mixer, args.gnn_layer_num
+    #                               ))
+    #     elif args.name in ["vdn", "qmix", "deepset_vdn", "deepset_qmix", "qplex", "asn"]:
+    #         logdir = os.path.join(logdir,
+    #                               "mixer={}".format(
+    #                                   args.mixer,
+    #                               ))
+    #     elif args.name in ["updet_vdn", "updet_qmix"]:
+    #         logdir = os.path.join(logdir,
+    #                               "mixer={}-att_dim={}-att_head={}-att_layer={}".format(
+    #                                   args.mixer,
+    #                                   args.transformer_embed_dim,
+    #                                   args.transformer_heads,
+    #                                   args.transformer_depth,
+    #                               ))
+    #     elif args.name in ["deepset_hyper_vdn", "deepset_hyper_qmix"]:
+    #         logdir = os.path.join(logdir,
+    #                               "mixer={}-hpn_hyperdim={}".format(
+    #                                   args.mixer,
+    #                                   args.hpn_hyper_dim,
+    #                               ))
+    #     elif args.name in ["hpn_vdn", "hpn_qmix", "hpn_qplex"]:
+    #         logdir = os.path.join(logdir,
+    #                               "head_n={}-mixer={}-hpn_hyperdim={}-acti={}".format(
+    #                                   args.hpn_head_num,
+    #                                   args.mixer,
+    #                                   args.hpn_hyper_dim,
+    #                                   args.hpn_hyper_activation,
+    #                               ))
+
+    # logdir = os.path.join(logdir,
+    #                       "rnn_dim={}-2bs={}_{}-tdlambda={}-epdec_{}={}k".format(
+    #                           args.rnn_hidden_dim,
+    #                           args.buffer_size,
+    #                           args.batch_size,
+    #                           args.td_lambda,
+    #                           args.epsilon_finish,
+    #                           args.epsilon_anneal_time // 1000,
+    #                       ))
+    # args.log_model_dir = logdir
+    # if args.use_tensorboard:
+    #     tb_logs_direc = os.path.join(dirname(dirname(dirname(abspath(__file__)))), args.local_results_path, "tb_logs")
+    #     tb_exp_direc = os.path.join(tb_logs_direc, "{}").format(unique_token)
+    #     if args.name in testing_algorithms:  # add parameter config to the logger path！
+    #         tb_exp_direc = os.path.join(tb_logs_direc, logdir, unique_token)
+    #     logger.setup_tb(tb_exp_direc)
+
     # configure tensorboard logger
     unique_token = "{}__{}".format(args.name, datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
     args.unique_token = unique_token
-
-    testing_algorithms = ["vdn", "qmix", "hpn_vdn", "hpn_qmix",
-                          "deepset_vdn", "deepset_qmix", "deepset_hyper_vdn", "deepset_hyper_qmix",
-                          "updet_vdn", "updet_qmix", "vdn_DA", "qmix_DA",
-                          "gnn_vdn", "gnn_qmix", "qplex", "hpn_qplex", "asn"
-                          ]
-    env_name = args.env
-    logdir = env_name
-    if env_name in ["sc2", "sc2_v2", ]:
-        logdir = os.path.join("{}_{}-obs_aid={}-obs_act={}".format(
-            logdir,
-            args.env_args["map_name"],
-            int(args.obs_agent_id),
-            int(args.obs_last_action),
-        ))
-        if env_name == "sc2_v2":
-            logdir = logdir + "-conic_fov={}".format(
-                "1-change_fov_by_move={}".format(
-                    int(args.env_args["change_fov_with_move"])) if args.env_args["conic_fov"] else "0"
-            )
-    logdir = os.path.join(logdir,
-                          "algo={}-agent={}".format(args.name, args.agent),
-                          "env_n={}".format(
-                              args.batch_size_run,
-                          ))
-    if args.name in testing_algorithms:
-        if args.name in ["vdn_DA", "qmix_DA", ]:
-            logdir = os.path.join(logdir,
-                                  "{}-data_augment={}".format(
-                                      args.mixer, args.augment_times
-                                  ))
-        elif args.name in ["gnn_vdn", "gnn_qmix"]:
-            logdir = os.path.join(logdir,
-                                  "{}-layer_num={}".format(
-                                      args.mixer, args.gnn_layer_num
-                                  ))
-        elif args.name in ["vdn", "qmix", "deepset_vdn", "deepset_qmix", "qplex", "asn"]:
-            logdir = os.path.join(logdir,
-                                  "mixer={}".format(
-                                      args.mixer,
-                                  ))
-        elif args.name in ["updet_vdn", "updet_qmix"]:
-            logdir = os.path.join(logdir,
-                                  "mixer={}-att_dim={}-att_head={}-att_layer={}".format(
-                                      args.mixer,
-                                      args.transformer_embed_dim,
-                                      args.transformer_heads,
-                                      args.transformer_depth,
-                                  ))
-        elif args.name in ["deepset_hyper_vdn", "deepset_hyper_qmix"]:
-            logdir = os.path.join(logdir,
-                                  "mixer={}-hpn_hyperdim={}".format(
-                                      args.mixer,
-                                      args.hpn_hyper_dim,
-                                  ))
-        elif args.name in ["hpn_vdn", "hpn_qmix", "hpn_qplex"]:
-            logdir = os.path.join(logdir,
-                                  "head_n={}-mixer={}-hpn_hyperdim={}-acti={}".format(
-                                      args.hpn_head_num,
-                                      args.mixer,
-                                      args.hpn_hyper_dim,
-                                      args.hpn_hyper_activation,
-                                  ))
-
-    logdir = os.path.join(logdir,
-                          "rnn_dim={}-2bs={}_{}-tdlambda={}-epdec_{}={}k".format(
-                              args.rnn_hidden_dim,
-                              args.buffer_size,
-                              args.batch_size,
-                              args.td_lambda,
-                              args.epsilon_finish,
-                              args.epsilon_anneal_time // 1000,
-                          ))
-    args.log_model_dir = logdir
     if args.use_tensorboard:
-        tb_logs_direc = os.path.join(dirname(dirname(dirname(abspath(__file__)))), args.local_results_path, "tb_logs")
+        tb_logs_direc = os.path.join(dirname(dirname(dirname(abspath(__file__)))), "results", "tb_logs")
         tb_exp_direc = os.path.join(tb_logs_direc, "{}").format(unique_token)
-        if args.name in testing_algorithms:  # add parameter config to the logger path！
-            tb_exp_direc = os.path.join(tb_logs_direc, logdir, unique_token)
-        logger.setup_tb(tb_exp_direc)
+        logger.setup_tb(tb_exp_direc)    
 
     # sacred is on by default
     logger.setup_sacred(_run)
@@ -257,26 +262,14 @@ def run_sequential(args, logger):
 
     logger.console_logger.info("Beginning training for {} timesteps".format(args.t_max))
 
-    # def _debug_batch_devices(tag, batch, t=0):
-    #     print(f"[DEVDBG] {tag} EpisodeBatch.device={batch.device} args.device={args.device}")
-    #     # 过一遍关键 transition_data
-    #     for k in ["obs", "state", "actions", "avail_actions", "reward", "terminated", "filled", "actions_onehot", "probs"]:
-    #         if k in batch.data.transition_data:
-    #             x = batch.data.transition_data[k]
-    #             try:
-    #                 sub = x[:, t] if x.dim() >= 2 else x
-    #             except Exception:
-    #                 sub = x
-    #             print(f"[DEVDBG]   trans[{k}] device={x.device} shape={tuple(x.shape)} sample_t_device={getattr(sub,'device','NA')}")
-    #     # 过一遍 episode_data
-    #     for k, v in batch.data.episode_data.items():
-    #         print(f"[DEVDBG]   ep[{k}] device={v.device} shape={tuple(v.shape)}")
-
     while runner.t_env <= args.t_max:
+        # Run for a whole episode at a time
         with th.no_grad():
+            # t_start = time.time()
             episode_batch = runner.run(test_mode=False)
-            if episode_batch.batch_size > 0:
+            if episode_batch.batch_size > 0:  # After clearing the batch data, the batch may be empty.
                 buffer.insert_episode_batch(episode_batch)
+            # print("Sample new batch cost {} seconds.".format(time.time() - t_start))
             episode += args.batch_size_run
 
         if buffer.can_sample(args.batch_size):
@@ -284,20 +277,13 @@ def run_sequential(args, logger):
                 continue
 
             episode_sample = buffer.sample(args.batch_size)
+
+            # Truncate batch to only filled timesteps
             max_ep_t = episode_sample.max_t_filled()
             episode_sample = episode_sample[:, :max_ep_t]
 
-            # # 搬运前打印
-            # _debug_batch_devices("before_move", episode_sample, t=0)
-
-            # if episode_sample.device != args.device:
-            #     episode_sample.to(args.device)
-
-            # # 搬运后打印
-            # _debug_batch_devices("after_move", episode_sample, t=0)
-
-            # if episode_sample.device != args.device:
-            #     print(f"[DEVDBG][WARN] episode_sample.device still {episode_sample.device} != {args.device}")
+            if episode_sample.device != args.device:
+                episode_sample.to(args.device)
 
             learner.train(episode_sample, runner.t_env, episode)
             del episode_sample
